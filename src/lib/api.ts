@@ -16,8 +16,10 @@ api.interceptors.request.use((config) => {
     // Ideally, access token in memory/header, refresh in cookie.
     // For this MVP, let's assume we might store token in cookie for client access too or localStorage
 
-    if (token) {
+    if (token && token !== 'undefined' && token !== 'null') {
         config.headers.Authorization = `Bearer ${token}`;
+    } else {
+        console.warn('No valid token found in cookies');
     }
     return config;
 });

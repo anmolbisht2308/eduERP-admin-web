@@ -72,6 +72,24 @@ export function AppSidebar() {
         router.push('/login');
     };
 
+    const isSuperAdmin = user?.role === 'super_admin';
+
+    const sidebarItems = isSuperAdmin
+        ? [
+            {
+                title: 'Dashboard',
+                url: '/super-admin',
+                icon: LayoutDashboard,
+            },
+            {
+                title: 'Schools',
+                url: '/super-admin/schools',
+                icon: GraduationCap,
+            },
+            // Add other Super Admin items (Revenue, Plans) here
+        ]
+        : items;
+
     return (
         <Sidebar>
             <SidebarHeader className="p-4 border-b">
@@ -79,14 +97,14 @@ export function AppSidebar() {
                     <GraduationCap className="h-6 w-6 text-primary" />
                     EduERP
                 </h2>
-                {user && <p className="text-xs text-muted-foreground">Welcome, {user.firstName}</p>}
+                {user && <p className="text-xs text-muted-foreground">Welcome, {user.name}</p>}
             </SidebarHeader>
             <SidebarContent>
                 <SidebarGroup>
                     <SidebarGroupLabel>Menu</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {items.map((item) => (
+                            {sidebarItems.map((item) => (
                                 <SidebarMenuItem key={item.title}>
                                     <SidebarMenuButton
                                         asChild
