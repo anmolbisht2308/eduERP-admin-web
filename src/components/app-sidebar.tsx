@@ -11,6 +11,7 @@ import {
     FileText,
     LogOut
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 import {
     Sidebar,
     SidebarContent,
@@ -122,11 +123,15 @@ export function AppSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
             </SidebarContent>
-            <SidebarFooter className="p-4 border-t">
+            <SidebarFooter className="p-4 border-t border-sidebar-border">
+                <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-sidebar-foreground/50 px-2 font-medium uppercase tracking-wider">Settings</span>
+                    <ThemeToggle />
+                </div>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton onClick={handleLogout} className="text-red-500 hover:text-red-600 hover:bg-red-50">
-                            <LogOut />
+                        <SidebarMenuButton onClick={handleLogout} className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 group">
+                            <LogOut className="group-hover:translate-x-1 transition-transform" />
                             <span>Logout</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { fadeIn } from '@/lib/motion';
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, GraduationCap } from 'lucide-react';
 import { setCookie } from 'cookies-next';
 
 const formSchema = z.object({
@@ -54,7 +54,7 @@ export function LoginForm() {
             // Set Cookie for API middleware interactio details
             setCookie('token', token, { maxAge: 60 * 60 * 24 }); // 1 day
 
-            toast.success('Welcome back!');
+            toast.success('Welcome back, ' + user.name);
 
             // Redirect based on role
             if (user.role === 'super_admin') {
@@ -72,26 +72,31 @@ export function LoginForm() {
 
     return (
         <motion.div
-            initial="initial"
-            animate="animate"
-            variants={fadeIn}
-            className="w-full max-w-md p-8 space-y-6 bg-white rounded-2xl shadow-xl border border-gray-100 dark:bg-zinc-900 dark:border-zinc-800"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="w-full max-w-md p-8 space-y-8 bg-card rounded-2xl shadow-2xl border border-border/50 backdrop-blur-sm relative overflow-hidden"
         >
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-purple-500" />
+
             <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">EduERP</h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Sign in to your admin account</p>
+                <div className="bg-primary/10 w-fit p-3 rounded-xl mx-auto mb-4">
+                    <GraduationCap className="h-8 w-8 text-primary" />
+                </div>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">EduERP</h1>
+                <p className="text-sm text-muted-foreground">Log in to manage your institution</p>
             </div>
 
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                     <FormField
                         control={form.control}
                         name="email"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Email</FormLabel>
+                                <FormLabel>Email Address</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="admin@school.com" {...field} />
+                                    <Input placeholder="admin@school.com" className="h-11 bg-input/50 focus:bg-background transition-colors" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -102,19 +107,26 @@ export function LoginForm() {
                         name="password"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Password</FormLabel>
+                                <div className="flex items-center justify-between">
+                                    <FormLabel>Password</FormLabel>
+                                    <span className="text-xs text-primary cursor-pointer hover:underline">Forgot?</span>
+                                </div>
                                 <FormControl>
-                                    <Input type="password" placeholder="••••••••" {...field} />
+                                    <Input type="password" placeholder="••••••••" className="h-11 bg-input/50 focus:bg-background transition-colors" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
                         )}
                     />
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Sign In'}
+                    <Button type="submit" className="w-full h-11 text-base font-medium shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all" disabled={isLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Log In to Dashboard'}
                     </Button>
                 </form>
             </Form>
+
+            <div className="text-center text-xs text-muted-foreground mt-4">
+                By logging in, you agree to our <span className="underline hover:text-primary cursor-pointer">Terms</span> and <span className="underline hover:text-primary cursor-pointer">Privacy Policy</span>.
+            </div>
         </motion.div>
     );
 }
