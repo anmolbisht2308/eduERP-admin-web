@@ -6,10 +6,13 @@ import {
     Home,
     LayoutDashboard,
     Settings,
+    User,
     Users,
-    Wallet,
+    Building2,
+    BookOpen,
     FileText,
-    LogOut
+    LogOut,
+    Banknote
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import {
@@ -41,6 +44,11 @@ const items = [
         icon: Calendar,
     },
     {
+        title: 'Classes',
+        url: '/dashboard/classes',
+        icon: BookOpen,
+    },
+    {
         title: 'Students',
         url: '/dashboard/students',
         icon: Users,
@@ -48,17 +56,12 @@ const items = [
     {
         title: 'Fees & Finance',
         url: '/dashboard/fees',
-        icon: Wallet,
+        icon: Banknote,
     },
     {
         title: 'Reports',
         url: '/dashboard/reports',
         icon: FileText,
-    },
-    {
-        title: 'Settings',
-        url: '/dashboard/settings',
-        icon: Settings,
     },
 ];
 

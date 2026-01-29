@@ -1,105 +1,227 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus, Search } from 'lucide-react';
-import { useStudents } from '@/features/students/hooks/use-students';
-import {
-    Table, TableBody, TableCell, TableHead, TableHeader, TableRow
-} from '@/components/ui/table';
-import {
-    Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger
-} from '@/components/ui/sheet';
-import { AdmissionForm } from '@/features/students/components/admission-form';
-import { Input } from '@/components/ui/input';
 import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchStudents, createStudent } from '@/features/students/services/student-service';
+import { fetchClasses } from '@/features/classes/services/class-service';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Loader2, Plus, UserPlus, Search, Filter } from 'lucide-react';
+import { toast } from 'sonner';
+import { motion } from 'framer-motion';
 
 export default function StudentsPage() {
-    const [search, setSearch] = useState('');
-    const { data, isLoading } = useStudents({ search, limit: 10 });
-    const [sheetOpen, setSheetOpen] = useState(false);
+    const queryClient = useQueryClient();
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+
+    // Form State
+    const [formData, setFormData] = useState({
+        firstName: '',
+        lastName: '',
+        admissionNumber: '',
+        parentName: '',
+        parentPhone: '',
+        classId: '',
+        sectionId: ''
+    });
+
+    const { data: students, isLoading: isLoadingStudents } = useQuery({
+        queryKey: ['students'],
+        queryFn: fetchStudents,
+    });
+
+    const { data: classes } = useQuery({
+        queryKey: ['classes'],
+        queryFn: fetchClasses,
+    });
+
+    const createMutation = useMutation({
+        mutationFn: createStudent,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['students'] });
+            setIsCreateOpen(false);
+            setFormData({
+                firstName: '',
+                lastName: '',
+                admissionNumber: '',
+                parentName: '',
+                parentPhone: '',
+                classId: '',
+                sectionId: ''
+            });
+            toast.success('Student admitted successfully');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Failed to admit student');
+        }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        createMutation.mutate(formData);
+    };
+
+    if (isLoadingStudents) {
+        return (
+            <div className="flex h-[50vh] items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold">Students</h1>
-
-                <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-                    <SheetTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" /> New Admission
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent className="overflow-y-auto">
-                        <SheetHeader>
-                            <SheetTitle>Admit New Student</SheetTitle>
-                        </SheetHeader>
-                        <div className="mt-6">
-                            <AdmissionForm onSuccess={() => setSheetOpen(false)} />
-                        </div>
-                    </SheetContent>
-                </Sheet>
-            </div>
-
-            <div className="flex items-center space-x-2">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                        placeholder="Search students..."
-                        className="pl-8"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Students</h1>
+                    <p className="text-muted-foreground">Manage student admissions and enrollments.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline">
+                        <Filter className="mr-2 h-4 w-4" /> Filter
+                    </Button>
+                    <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="shadow-lg shadow-primary/20">
+                                <UserPlus className="mr-2 h-4 w-4" /> Admit Student
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[600px]">
+                            <DialogHeader>
+                                <DialogTitle>New Student Admission</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="firstName">First Name</Label>
+                                        <Input
+                                            id="firstName"
+                                            value={formData.firstName}
+                                            onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="lastName">Last Name</Label>
+                                        <Input
+                                            id="lastName"
+                                            value={formData.lastName}
+                                            onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="admissionNumber">Admission Number</Label>
+                                    <Input
+                                        id="admissionNumber"
+                                        placeholder="e.g. ADM-2024-001"
+                                        value={formData.admissionNumber}
+                                        onChange={(e) => setFormData({ ...formData, admissionNumber: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="parentName">Parent Name</Label>
+                                        <Input
+                                            id="parentName"
+                                            value={formData.parentName}
+                                            onChange={(e) => setFormData({ ...formData, parentName: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="parentPhone">Parent Phone</Label>
+                                        <Input
+                                            id="parentPhone"
+                                            value={formData.parentPhone}
+                                            onChange={(e) => setFormData({ ...formData, parentPhone: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="class">Class</Label>
+                                        <Select onValueChange={(val) => setFormData({ ...formData, classId: val })} required>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Class" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {classes?.map((cls) => (
+                                                    <SelectItem key={cls._id} value={cls._id}>{cls.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <DialogFooter>
+                                    <Button type="submit" disabled={createMutation.isPending}>
+                                        {createMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm Admission'}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
                 </div>
             </div>
 
-            <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Admission No</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Class</TableHead>
-                                <TableHead>Parent</TableHead>
-                                <TableHead>Status</TableHead>
+            <div className="rounded-xl border border-border/50 bg-card shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border/50 bg-muted/50 flex items-center gap-2">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search students..."
+                        className="max-w-xs h-9 bg-background border-none shadow-none focus-visible:ring-0"
+                    />
+                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Student Info</TableHead>
+                            <TableHead>Admission No</TableHead>
+                            <TableHead>Class</TableHead>
+                            <TableHead>Parent Contact</TableHead>
+                            <TableHead>Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {students?.map((student) => (
+                            <TableRow key={student._id} className="hover:bg-muted/50">
+                                <TableCell>
+                                    <div>
+                                        <div className="font-medium">{student.firstName} {student.lastName}</div>
+                                        <div className="text-xs text-muted-foreground">{student._id.slice(-6)}</div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>{student.admissionNumber}</TableCell>
+                                <TableCell>
+                                    {student.classId?.name}
+                                </TableCell>
+                                <TableCell>
+                                    <div className="text-sm">{student.parentName}</div>
+                                    <div className="text-xs text-muted-foreground">{student.parentPhone}</div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
+                                        {student.status}
+                                    </Badge>
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">Loading...</TableCell>
-                                </TableRow>
-                            ) : data?.students?.map((student: any) => (
-                                <TableRow key={student._id}>
-                                    <TableCell className="font-medium">{student.admissionNumber}</TableCell>
-                                    <TableCell>{student.firstName} {student.lastName}</TableCell>
-                                    <TableCell>{student.classId?.name || '-'}</TableCell>
-                                    <TableCell>
-                                        <div className="flex flex-col">
-                                            <span>{student.parentName}</span>
-                                            <span className="text-xs text-muted-foreground">{student.parentPhone}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
-                                            {student.status}
-                                        </Badge>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {data?.students?.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">
-                                        No students found.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+                        ))}
+                    </TableBody>
+                </Table>
+                {students?.length === 0 && (
+                    <div className="text-center py-12 text-muted-foreground">
+                        No students found. Admit your first student above.
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
