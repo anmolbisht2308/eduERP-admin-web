@@ -15,7 +15,7 @@ export interface Student {
 
 export const fetchStudents = async (): Promise<Student[]> => {
     const response = await api.get('/students');
-    return response.data.data;
+    return response.data.data.students;
 };
 
 export const createStudent = async (data: any) => {

@@ -40,6 +40,10 @@ api.interceptors.response.use(
 
                 // If successful, the backend sets a new 'token' cookie.
                 // We retry the original request.
+                // CRITICAL: Clear the old expired Authorization header so backend uses the fresh cookie
+                if (originalRequest.headers) {
+                    delete originalRequest.headers['Authorization'];
+                }
                 return api(originalRequest);
             } catch (refreshError) {
                 // If refresh fails, redirect to login
