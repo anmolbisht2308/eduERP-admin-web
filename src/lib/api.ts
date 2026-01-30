@@ -27,7 +27,26 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
-        // Handle 401 (Refresh Token) logic here later
+        const originalRequest = error.config;
+
+        // Prevent infinite loop
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
+            try {
+                // Call refresh token API
+                // Note: The browser automatically sends the httpOnly refreshToken cookie with this request
+                await api.post('/auth/refresh-token');
+
+                // If successful, the backend sets a new 'token' cookie.
+                // We retry the original request.
+                return api(originalRequest);
+            } catch (refreshError) {
+                // If refresh fails, redirect to login
+                window.location.href = '/login';
+                return Promise.reject(refreshError);
+            }
+        }
         return Promise.reject(error);
     }
 );
