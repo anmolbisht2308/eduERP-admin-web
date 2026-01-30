@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchFeeHeads, createFeeHead, fetchFeeStructures, createFeeStructure } from '@/features/fees/services/fee-service';
 import { fetchClasses } from '@/features/classes/services/class-service';
+import { fetchAcademicYears } from '@/features/academic/services/academic-service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,9 +14,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Plus, DollarSign, Receipt } from 'lucide-react';
+
+import { Loader2, Plus, DollarSign, Receipt, Trash2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { Alert, AlertDescription, AlertTitle } from '../../../components/ui/alert';
 
 export default function FeesPage() {
     const queryClient = useQueryClient();
@@ -45,6 +48,13 @@ export default function FeesPage() {
         queryKey: ['classes'],
         queryFn: fetchClasses,
     });
+
+    const { data: academicYears } = useQuery({
+        queryKey: ['academic-years'],
+        queryFn: fetchAcademicYears,
+    });
+
+    const currentAcademicYear = academicYears?.find(y => y.isCurrent);
 
     const createHeadMutation = useMutation({
         mutationFn: createFeeHead,
@@ -78,8 +88,18 @@ export default function FeesPage() {
 
     const handleCreateStructure = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!currentAcademicYear) {
+            toast.error('No active academic year found. Please configure an academic year first.');
+            return;
+        }
+
         const totalAmount = structureFormData.feeComponents.reduce((sum, comp) => sum + comp.amount, 0);
-        createStructureMutation.mutate({ ...structureFormData, totalAmount });
+        createStructureMutation.mutate({
+            ...structureFormData,
+            totalAmount,
+            academicYearId: currentAcademicYear._id
+        });
     };
 
     if (isLoadingHeads || isLoadingStructures) {
@@ -194,6 +214,15 @@ export default function FeesPage() {
                                     <DialogTitle>Create Fee Structure</DialogTitle>
                                 </DialogHeader>
                                 <form onSubmit={handleCreateStructure} className="space-y-4">
+                                    {!currentAcademicYear && (
+                                        <Alert variant="destructive">
+                                            <AlertCircle className="h-4 w-4" />
+                                            <AlertTitle>Error</AlertTitle>
+                                            <AlertDescription>
+                                                No active academic year found. You cannot create fee structures without an active academic year.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2 col-span-2">
                                             <Label htmlFor="structureName">Structure Name</Label>
@@ -232,9 +261,85 @@ export default function FeesPage() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                        <div className="space-y-4 pt-2 border-t">
+                                            <div className="flex items-center justify-between">
+                                                <Label>Fee Components</Label>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => setStructureFormData({
+                                                        ...structureFormData,
+                                                        feeComponents: [...structureFormData.feeComponents, { feeHeadId: '', amount: 0 }]
+                                                    })}
+                                                >
+                                                    <Plus className="mr-2 h-3 w-3" /> Add Component
+                                                </Button>
+                                            </div>
+
+                                            <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
+                                                {structureFormData.feeComponents.map((comp, index) => (
+                                                    <div key={index} className="flex gap-2 items-end">
+                                                        <div className="flex-1 space-y-1">
+                                                            <Label className="text-xs text-muted-foreground">Head</Label>
+                                                            <Select
+                                                                value={comp.feeHeadId}
+                                                                onValueChange={(val) => {
+                                                                    const newComps = [...structureFormData.feeComponents];
+                                                                    newComps[index].feeHeadId = val;
+                                                                    setStructureFormData({ ...structureFormData, feeComponents: newComps });
+                                                                }}
+                                                            >
+                                                                <SelectTrigger>
+                                                                    <SelectValue placeholder="Select Head" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {feeHeads?.map((head) => (
+                                                                        <SelectItem key={head._id} value={head._id}>{head.name}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                        <div className="w-24 space-y-1">
+                                                            <Label className="text-xs text-muted-foreground">Amount</Label>
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                value={comp.amount}
+                                                                onChange={(e) => {
+                                                                    const newComps = [...structureFormData.feeComponents];
+                                                                    newComps[index].amount = parseFloat(e.target.value) || 0;
+                                                                    setStructureFormData({ ...structureFormData, feeComponents: newComps });
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <Button
+                                                            type="button"
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="text-destructive hover:text-destructive/90"
+                                                            onClick={() => {
+                                                                const newComps = structureFormData.feeComponents.filter((_, i) => i !== index);
+                                                                setStructureFormData({ ...structureFormData, feeComponents: newComps });
+                                                            }}
+                                                            disabled={structureFormData.feeComponents.length === 1}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="flex justify-between items-center bg-muted/50 p-2 rounded-lg">
+                                                <span className="text-sm font-medium">Total Amount:</span>
+                                                <Badge variant="outline" className="text-base">
+                                                    ₹{structureFormData.feeComponents.reduce((sum, c) => sum + c.amount, 0).toLocaleString()}
+                                                </Badge>
+                                            </div>
+                                        </div>
                                     </div>
                                     <DialogFooter>
-                                        <Button type="submit" disabled={createStructureMutation.isPending}>
+                                        <Button type="submit" disabled={createStructureMutation.isPending || !currentAcademicYear}>
                                             {createStructureMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Structure'}
                                         </Button>
                                     </DialogFooter>
