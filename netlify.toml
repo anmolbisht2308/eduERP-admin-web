@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[context.production.environment]
+  # You can hardcode this if it's stable, or manage it in the Netlify Dashboard
+  NODE_ENV = "production"
+  # NEXT_PUBLIC_API_URL = "https://eduerp-backend.onrender.com/api/v1" 
+  # Uncomment the above line if you want to enforce the URL from this file, 
+  # otherwise setup in Dashboard > Site settings > Environment variables
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
