@@ -84,7 +84,7 @@ export function LoginForm() {
                     <GraduationCap className="h-8 w-8 text-primary" />
                 </div>
                 <h1 className="text-3xl font-bold tracking-tight text-foreground">EduERP</h1>
-                <p className="text-sm text-muted-foreground">Log in to manage your institution</p>
+                <p className="text-sm text-muted-foreground">Log in to manage your institutions</p>
             </div>
 
             <Form {...form}>
