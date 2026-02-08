@@ -29,8 +29,10 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
 
-        // Prevent infinite loop
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Prevent infinite loop: Don't retry if the refresh-token endpoint itself failed
+        const isRefreshTokenEndpoint = originalRequest.url?.includes('/auth/refresh-token');
+
+        if (error.response?.status === 401 && !originalRequest._retry && !isRefreshTokenEndpoint) {
             originalRequest._retry = true;
 
             try {
@@ -51,6 +53,12 @@ api.interceptors.response.use(
                 return Promise.reject(refreshError);
             }
         }
+
+        // If refresh-token endpoint failed with 401, directly redirect to login
+        if (isRefreshTokenEndpoint && error.response?.status === 401) {
+            window.location.href = '/login';
+        }
+
         return Promise.reject(error);
     }
 );
