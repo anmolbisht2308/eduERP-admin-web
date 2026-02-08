@@ -45,8 +45,8 @@ export function LoginForm() {
         setIsLoading(true);
         try {
             const response = await api.post('/auth/login', values);
-            const { token, data } = response.data;
-            const { user } = data;
+            const { data } = response.data;
+            const { user, token } = data;
 
             // Update Store
             login(user, token);
